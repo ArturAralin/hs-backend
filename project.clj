@@ -8,8 +8,9 @@
                  [environ "1.1.0"]
                  [http-kit "2.3.0"]
                  [ring/ring-json "0.5.0"]
+                 [ring "1.7.0"]
                  [compojure "1.6.1"]
-                 [funcool/struct "1.3.0"]
+                 [funcool/struct "1.4.0"]
                  [honeysql "0.9.10"]
                  [migratus "1.2.0"]
                  [org.postgresql/postgresql "42.1.4"]
@@ -19,6 +20,7 @@
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}
              :dev {:env {:environment "development"
+                         :app-port 8080
                          :database-type "postgresql"}}
              :dev-local {:env {
                                :database-name "health_samurai_app"

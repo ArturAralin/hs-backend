@@ -1,7 +1,11 @@
 (ns health-samurai-back-end.core
   (:require
+   [environ.core :refer [env]]
    [org.httpkit.server :refer [run-server]]
+   [ring.middleware.reload :as reload]
    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
+   [ring.middleware.params :refer [wrap-params]]
+   [ring.middleware.keyword-params :refer [wrap-keyword-params]]
    [health-samurai-back-end.root-router :as router])
   (:gen-class))
 
@@ -12,23 +16,25 @@
     (@server :timeout 100)
     (reset! server nil)))
 
-(defn wrap-json-response-if-accept [handler]
-  (fn [req]
-    (let [handler (let [accept (-> req :headers (get "accept"))]
-              (if (= accept "application/json")
-                (wrap-json-response handler)
-                handler))]
-      (handler req))))
+(defn wrap-autoreload [app]
+  (if (= (:environment env) "development")
+    (reload/wrap-reload app)
+    app))
 
 (defn wrap-app [app]
   (-> app
       (wrap-json-body {:keywords? true :bigdecimals? true})
-      wrap-json-response-if-accept))
+      wrap-json-response
+      wrap-keyword-params
+      wrap-params
+      wrap-autoreload))
 
-(defn -main []
-  (reset! server (run-server (wrap-app #'router/root) {:port 8080})))
+(defn -main [& _]
+  (reset! server
+          (run-server
+           (wrap-app #'router/root)
+           {:port (:app-port env)})))
 
 (defn reload-all []
   (stop-server)
-  (use 'health-samurai-back-end.core :reload-all)
   (-main))
