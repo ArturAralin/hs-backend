@@ -33,8 +33,4 @@
   (reset! server
           (run-server
            (wrap-app #'router/root)
-           {:port (:app-port env)})))
-
-(defn reload-all []
-  (stop-server)
-  (-main))
+           {:port (Integer. (:app-port env))})))
