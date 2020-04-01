@@ -1,35 +1,55 @@
 (ns tools.routing
   (:require
    [ring.util.response :refer [bad-request]]
-   [struct.core :as v]))
+   [clojure.spec.alpha :as spec]))
 
-;; filter undefined validation schemas
-(defn- filter-empty-pairs [pairs]
-  (filter #(some? (first %)) pairs))
+;; return only existing errors
+(defn- get-errors [validation-result]
+  (->> validation-result
+       vals
+       (map #(second %))
+       (filter not-empty)))
 
-;; valdate pairs with struct
-(defn- validate [[schema data]]
-  (v/validate data schema))
+;; returns hash-map with validation results
+(defn- get-vals [validation-result]
+  (->> validation-result
+       (map #(hash-map (first %) (second (second %))))
+       (reduce into {})))
 
-;; keeps only validation results
-(defn- get-errors [pairs]
-  (keep-indexed #(when (even? %1) %2) (flatten pairs)))
+(defn- valid? [validation-result]
+  (->> validation-result
+       vals
+       (every? #(= :valid (first %)))))
 
-;; checks for not invalid results existig
-(defn- valid? [pairs]
-  (empty? (get-errors pairs)))
+;; returns validation problems from explained data
+(defn- get-problems [schema data]
+  (let [problems (into {} (:clojure.spec.alpha/problems (spec/explain-data schema data)))
+        path (:in problems)
+        val (:val problems)]
+    {:path path
+     :value val}))
 
-;; wrap handler with a validation
+;; applies validation to data
+(defn- apply-validate [schema data]
+  (if (some? schema)
+    (let [validation-result (spec/conform schema data)]
+      (if (= validation-result :clojure.spec.alpha/invalid)
+        [:invalid (get-problems schema data)]
+        [:valid validation-result]))
+    [:valid {}]))
+
+;; applies validation by schema
+(defn- validate [schemas req]
+  ;; TODO: check if data exists but schema not
+  (->> [:body :params]
+       (map #(hash-map % (apply-validate (% schemas) (% req))))
+       (reduce into {})))
+
+;; validate request data via schema
 (defn with-validation [handler schemas]
   (fn [req]
-    (let [pairs (filter-empty-pairs
-                 [(map :body [schemas req])
-                  (map :params [schemas req])
-                  ;;  this is path parms
-                  ;; (map :params [schemas req])
-                  ])
-          validation-result (map validate pairs)]
+    (let [validation-result (validate schemas req)]
       (if (valid? validation-result)
-        (handler req)
+        (handler (merge req (get-vals validation-result)))
         (bad-request {:status :bad-request
-                      :reasons (get-errors validation-result)})))))
+                      :details (get-errors validation-result)})))))
