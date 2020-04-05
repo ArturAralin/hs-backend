@@ -3,7 +3,14 @@
 
 ;; convert ISO8601 to LocalDate
 (defn parse-date [string]
-  (LocalDate/parse string))
+  (when (string? string)
+    (LocalDate/parse string)))
+
+(defn parse-date-in [x path]
+  (let [v (get-in x path)]
+    (if (some? v)
+      (update-in x path parse-date)
+      x)))
 
 (defn resolve-nulls [row]
   (->> row
