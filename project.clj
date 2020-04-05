@@ -19,13 +19,17 @@
   :main ^:skip-aot health-samurai-back-end.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}
+             :prod {:env {:environment "production"
+                          :app-port "80"
+                          :database-type "postgresql"}}
              :dev {:env {:environment "development"
                          :app-port "8080"
                          :database-type "postgresql"}}
-             :dev-local {:env {
-                               :database-name "health_samurai_app"
+             :dev-local {:env {:database-name "health_samurai_app"
                                :database-username "postgres"
                                :database-password "postgres"
                                :database-host "localhost"
                                :database-port "5444"
-                               }}})
+                               }}
+             :test {:dependencies [[ring/ring-mock "0.4.0"]
+                                   [cheshire "5.10.0"]]}})
