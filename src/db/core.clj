@@ -17,9 +17,11 @@
   (try
     (io! (jdbc/query db-config query))
     (catch org.postgresql.util.PSQLException e
-      (let [code (.getErrorCode e)]
-        (if (= code 0)
-          '()
+      (let [msg (.getMessage e)]
+        (if (= "Запрос не вернул результатов." msg)
+          (do
+            (println "DB ERROR")
+            '())
           (throw e))))))
 
 ;; exec honeysql query
