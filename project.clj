@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [environ "1.1.0"]
                  [http-kit "2.3.0"]
+                 [ring-cors "0.1.13"]
                  [ring/ring-json "0.5.0"]
                  [ring "1.7.0"]
                  [compojure "1.6.1"]
