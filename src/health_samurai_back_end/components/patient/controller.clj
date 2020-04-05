@@ -1,7 +1,7 @@
 (ns health-samurai-back-end.components.patient.controller
   (:require
    [ring.util.response :refer [response]]
-   [db.tools :refer [nil-to-null-keyword]]
+   [db.tools :refer [nil-to-null-keyword parse-date-in]]
    [health-samurai-back-end.components.patient.model :as PatientModel]))
 
 (defn get-patient [req]
@@ -11,6 +11,7 @@
                 [:limit :offset])]
     (response
      {:status :ok
+      :total (PatientModel/count-patients!)
       :response (PatientModel/get-all! params)})))
 
 (defn create-patient [req]
@@ -24,7 +25,7 @@
 (defn update-patient [req]
   (doall
    (->> (get-in req [:body :update_patients])
-        (map nil-to-null-keyword)
+        (map #(-> % nil-to-null-keyword (parse-date-in [:birthday])))
         ;; here must be a tansaction
         (map PatientModel/update-patient!)))
   (response {:status :ok}))
