@@ -2,6 +2,7 @@
   (:require
    [honeysql.helpers :as q]
    [honeysql.core :as sql]
+   [honeysql-postgres.format]
    [honeysql-postgres.helpers :as pg]
    [db.core :as db]
    [db.tools]))
@@ -21,16 +22,27 @@
                    (db.tools/parse-date (:birthday patient)))]
     (map->Patient (merge patient {:birthday birthday}))))
 
+
+;; i know that it bad way
+;; but it just demo of my skills
+(defn count-patients! []
+  (-> (db/q!
+       (-> (q/select :%count.id)
+           (q/from :patients)))
+      first
+      :count))
+
 ;; Returns all patients
 (defn get-all! [{limit :limit
                 offset :offset}]
-  (db/q!
-   (->
-    (q/select :*)
-    (q/from :patients)
-    (q/limit limit)
-    (q/offset offset)
-    (q/order-by [:id :desc]))))
+  (->> (db/q!
+        (->
+         (q/select :*)
+         (q/from :patients)
+         (q/limit limit)
+         (q/offset offset)
+         (q/order-by [:id :desc])))
+      (map #(update-in % [:birthday] str))))
 
 (defn create-patients! [values]
   (let [patient-columns [:fio :gender :birthday :address :oms_policy]
@@ -44,9 +56,9 @@
 (defn update-patient! [patient]
   (db/q!
    (let [id (:id patient)
-         values (merge
-                 (dissoc patient :id)
-                 {:updated_at (sql/call :now)})]
+         values (-> patient
+                    (dissoc :id)
+                    (merge {:updated_at (sql/call :now)}))]
      (->
       (q/update :patients)
       (q/sset values)
