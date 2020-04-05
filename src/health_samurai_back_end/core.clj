@@ -7,7 +7,8 @@
    [ring.middleware.params :refer [wrap-params]]
    [ring.middleware.cors :refer [wrap-cors]]
    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
-   [health-samurai-back-end.root-router :as router])
+   [health-samurai-back-end.root-router :as router]
+   [db.core])
   (:gen-class))
 
 (defonce server (atom nil))
@@ -32,8 +33,14 @@
       wrap-params
       wrap-autoreload))
 
+(def app (wrap-app #'router/root))
+
 (defn -main [& _]
-  (reset! server
-          (run-server
-           (wrap-app #'router/root)
-           {:port (Integer. (:app-port env))})))
+  (println (str "ENV: " (:environment env)))
+  (println (str "DB: " (db.core/try-connection!)))
+  (let [port (Integer. (:app-port env))]
+    (reset! server
+            (run-server
+             app
+             {:port port}))
+    (println (str "Server started on " port))))
