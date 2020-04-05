@@ -5,6 +5,7 @@
    [ring.middleware.reload :as reload]
    [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
    [ring.middleware.params :refer [wrap-params]]
+   [ring.middleware.cors :refer [wrap-cors]]
    [ring.middleware.keyword-params :refer [wrap-keyword-params]]
    [health-samurai-back-end.root-router :as router])
   (:gen-class))
@@ -23,6 +24,8 @@
 
 (defn wrap-app [app]
   (-> app
+      (wrap-cors :access-control-allow-origin [#".*"]
+                 :access-control-allow-methods #{:get :put :post :delete :options})
       (wrap-json-body {:keywords? true :bigdecimals? true})
       wrap-json-response
       wrap-keyword-params
