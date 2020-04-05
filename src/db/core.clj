@@ -27,3 +27,6 @@
 ;; exec honeysql query
 (defn q! [query]
   (raw! (sql/format query)))
+
+(defn try-connection! []
+  (= 2 (:r (first (raw! ["SELECT 1 + 1 as r"])))))
